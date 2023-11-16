@@ -10,9 +10,11 @@ module load UHTS/Aligner/hisat/2.2.1
 home_path=/data/users/bnezar/RNA_Project
 references_path=/data/courses/rnaseq_course/lncRNAs/fastq
 
-hisat2 -x "reference" {-1 data_1 -2 data_2}
+# syntax for hisat1: hisat2 -x "reference" {-1 data_1 -2 data_2}
 
 # Alignment for test strains
+# --phred33 NOt sure if default but better to specify
+# -p 8 to make use of all 8 cores
 hisat2 --phred33 -p 8 -x $home_path/Reference_index -1 $references_path/1_1_L3_R1_001_ij43KLkHk1vK.fastq.gz  -2 $references_path/1_1_L3_R2_001_qyjToP2TB6N7.fastq.gz -S $home_path/SAM/1_1.sam
 hisat2 --phred33 -p 8 -x $home_path/Reference_index -1 $references_path/1_2_L3_R1_001_DnNWKUYhfc9S.fastq.gz -2 $references_path/1_2_L3_R2_001_SNLaVsTQ6pwl.fastq.gz -S $home_path/SAM/1_2.sam
 hisat2 --phred33 -p 8 -x $home_path/Reference_index -1 $references_path/1_5_L3_R1_001_iXvvRzwmFxF3.fastq.gz  -2 $references_path/1_5_L3_R2_001_iXCMrktKyEh0.fastq.gz -S $home_path/SAM/1_3.sam

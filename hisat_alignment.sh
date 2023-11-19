@@ -23,3 +23,4 @@ hisat2 --phred33 -p 8 -x $home_path/Reference_index/GRCh38 -1 $references_path/1
 hisat2 --phred33 -p 8 -x $home_path/Reference_index/GRCh38 -1 $references_path/P1_L3_R1_001_9L0tZ86sF4p8.fastq.gz  -2 $references_path/P1_L3_R2_001_yd9NfV9WdvvL.fastq.gz -S $home_path/SAM/P_1.sam
 hisat2 --phred33 -p 8 -x $home_path/Reference_index/GRCh38 -1 $references_path/P2_L3_R1_001_R82RphLQ2938.fastq.gz  -2 $references_path/P2_L3_R2_001_06FRMIIGwpH6.fastq.gz -S $home_path/SAM/P_2.sam
 hisat2 --phred33 -p 8 -x $home_path/Reference_index/GRCh38 -1 $references_path/P3_L3_R1_001_fjv6hlbFgCST.fastq.gz  -2 $references_path/P3_L3_R2_001_xo7RBLLYYqeu.fastq.gz -S $home_path/SAM/P_3.sam
+#

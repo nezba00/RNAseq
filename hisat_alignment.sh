@@ -3,6 +3,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem-per-cpu=6G
 #SBATCH --time=04:00:00
+#SBATCH --job-name="HISAT"
 
 # Load Hisat2 module
 module load UHTS/Aligner/hisat/2.2.1

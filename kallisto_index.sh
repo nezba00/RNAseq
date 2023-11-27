@@ -8,7 +8,7 @@
 #SBATCH --error=kallIndex_%j.err
 
 # Load Kallisto module
-module load kallisto/0.48.0-gompi-2021a
+module load UHTS/Analysis/kallisto/0.46.0
 
 # Define path variables
 home=/data/users/bnezar/RNA_Project

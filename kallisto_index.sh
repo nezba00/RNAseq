@@ -15,7 +15,7 @@ home=/data/users/bnezar/RNA_Project
 reference=/data/courses/rnaseq_course/lncRNAs/Project1/references
 
 #Create Kallisto directory
-mkdir kallisto
+mkdir /../kallisto
 
 # Run kallisto index on reference file
 kallisto index --index="$home/kallisto/GRCh38_kallisto_index" $reference/GRCh38.genome.fa

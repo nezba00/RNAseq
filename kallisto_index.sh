@@ -7,8 +7,9 @@
 #SBATCH --output=kallIndex_%j.out
 #SBATCH --error=kallIndex_%j.err
 
-# Load Kallisto module
+# Load Kallisto and cufflinks module
 module load UHTS/Analysis/kallisto/0.46.0
+module load UHTS/Assembler/cufflinks/2.2.1;
 
 # Define path variables
 home=/data/users/bnezar/RNA_Project
@@ -17,6 +18,9 @@ reference=/data/courses/rnaseq_course/lncRNAs/Project1/references
 #Create Kallisto directory
 mkdir $home/kallisto
 
-# Run kallisto index on reference file
-kallisto index --index="$home/kallisto/GRCh38_kallisto_index" $reference/GRCh38.genome.fa
+# Create a fasta without single exon transcripts
+gffread -g $reference/GRCh38.genome.fa -w $home/kallisto/all_transcripts.fa $home/GTF_files/all_merged.gtf
+
+# Run kallisto index on transcripts fasta file
+kallisto index -i $home/kallisto/GRCh38_kallisto_index $home/kallisto/all_transcripts.fa
 

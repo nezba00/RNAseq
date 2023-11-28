@@ -18,7 +18,7 @@ reference=/data/courses/rnaseq_course/lncRNAs/Project1/references
 #Create Kallisto directory
 mkdir $home/kallisto
 
-# Create a fasta without single exon transcripts
+# Create a fasta with all transcripts
 gffread -g $reference/GRCh38.genome.fa -w $home/kallisto/all_transcripts.fa $home/GTF_files/all_merged.gtf
 
 # Run kallisto index on transcripts fasta file

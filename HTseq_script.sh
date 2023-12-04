@@ -3,7 +3,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem-per-cpu=6G
 #SBATCH --job-name="HTseq"
-#SBATCH --time=14:00:00
+#SBATCH --time=23:00:00
 #SBATCH --output=HTseq1_%j.out
 #SBATCH --error=HTseq1_%j.err
 

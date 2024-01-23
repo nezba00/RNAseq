@@ -20,7 +20,7 @@ cd $home
 #   fi: fasta in
 #   bed: bed reference
 #   fo: specify output dir
-bedtools getfasta -name -s -fi $ref/GRCh38.genome.fa -bed $home/novel.bed \
+bedtools getfasta -name -s -fi $ref/GRCh38.genome.fa -bed $home/novel_light.bed \
                     -fo $home/output_files/novel.fa
 
 ## Run CPAT to predict coding potential

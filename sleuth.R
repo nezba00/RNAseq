@@ -203,6 +203,78 @@ write.table(full_bed_known, file = bed_path_known, sep = "\t", quote = FALSE,
             col.names = FALSE, row.names = FALSE)
 
 
+### Create Bed files for the 5' end and 3' end
+# we want a window of +- 50bp
+# --> start for - stranded transcripts is end!
+
+five_prime_bed <- full_bed_novel 
+
+# rename relevant cols
+colnames(five_prime_bed)[colnames(five_prime_bed) == "start"] <- "start -50"
+colnames(five_prime_bed)[colnames(five_prime_bed) == "end"] <- "start +50"
+
+# replace start and end values with start +- 50
+for (index in  1:nrow(five_prime_bed)){
+  if (five_prime_bed[index, 5] == "+"){
+    start <- five_prime_bed[index, 2]
+    five_prime_bed[index, 2] <- start - 50
+    five_prime_bed[index, 3] <- start + 50
+  }
+  else {
+    start <- five_prime_bed[index, 3]
+    five_prime_bed[index, 2] <- start - 50
+    five_prime_bed[index, 3] <- start + 50
+        
+  }
+} 
+
+## Do the same for 3 prime
+
+three_prime_bed <- full_bed_novel 
+
+# rename relevant cols
+colnames(three_prime_bed)[colnames(three_prime_bed) == "start"] <- "end -50"
+colnames(three_prime_bed)[colnames(three_prime_bed) == "end"] <- "end +50"
+
+# replace start and end values with end +- 50
+for (index in  1:nrow(three_prime_bed)){
+  if (three_prime_bed[index, 5] == "+"){
+    end <- three_prime_bed[index, 3]
+    three_prime_bed[index, 2] <- end - 50
+    three_prime_bed[index, 3] <- end + 50
+  }
+  else {
+    end <- three_prime_bed[index, 2]
+    three_prime_bed[index, 2] <- end - 50
+    three_prime_bed[index, 3] <- end + 50
+    
+  }
+} 
+
+# Check for negative values where we substracted 50
+print(sum(five_prime_bed$`start -50` < 0))
+#>0
+print(sum(three_prime_bed$`end -50` < 0))
+#>3
+
+# exchange negative numbers for 0
+three_prime_bed$`end -50`[three_prime_bed$`end -50` < 0] <- 0
+
+# Check again for negative values where we subtracted 50
+print(sum(three_prime_bed$`end -50` < 0))
+#>0
+
+## save data to bed file
+bed_path_five_prime <- "C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/five_prime.bed"
+bed_path_three_prime <- "C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/three_prime.bed"
+
+# save bed files for upload later
+write.table(five_prime_bed, file = bed_path_five_prime, sep = "\t", quote = FALSE,
+            col.names = FALSE, row.names = FALSE)
+write.table(three_prime_bed, file = bed_path_three_prime, sep = "\t", quote = FALSE,
+            col.names = FALSE, row.names = FALSE)
+
+
 
 
 # Read kallisto output for parental lines

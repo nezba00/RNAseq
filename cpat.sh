@@ -35,7 +35,7 @@ bedtools getfasta -name+ -s -fi $ref/GRCh38.genome.fa -bed $home/novel.bed \
 #   r: Reference genome sequences in FASTA format --> important when g is a .bed
 #   o: Output file
 cpat.py -x $ref/Human_Hexamer.tsv -d $ref/Human_logitModel.RData \
-        --top-orf=5 -g novel.bed -r $home/output_files/novel.fa \
+        -g $home/output_files/novel.fa \
         -o $home/output_files/cpat_out
 
 

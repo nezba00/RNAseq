@@ -24,7 +24,7 @@ cd $home
 #   wb: write entry from b
 #   a: Each feature in A is compared to B in search of overlaps (BAM/BED/GFF/VCF)
 #   b: One or more BAM/BED/GFF/VCF file(s) “B”
-bedtools intersect -s -wa -wb -a five_prime.bed \
+bedtools intersect -s -wa -wb -a five_prime_light.bed \
                               -b $ref/refTSS_v4.1_human_coordinate.hg38.bed \
                                > $home/output_files/tss_intersect.bed
 

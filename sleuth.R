@@ -72,7 +72,10 @@ mapping <- dplyr::rename(mapping, target_id = ensembl_transcript_id,
 
 
 # Initialize Sleuth Object
-sleuth_object <- sleuth_prep(ref_df, extra_bootstrap_summary = TRUE, target_mapping = mapping)
+#--> changed transformation function to log2FC
+sleuth_object <- sleuth_prep(ref_df, extra_bootstrap_summary = TRUE, 
+                             target_mapping = mapping,
+                             transformation_function = function(x) log2(x + 0.5))
 
 
 # Fit full model
@@ -123,7 +126,7 @@ plot_volcano(sleuth_object, test = "conditionparental", test_type = "wt", which_
 
 
 
-# Create New dataframe with necessary information for bedfile
+### Create New dataframe with necessary information for bedfile
 lnc_RNA_data <- dplyr::filter(sleuth_significant, gene_biotype == "lncRNA")
 novel_transcripts <- dplyr::filter(sleuth_significant, is.na(ens_gene))
 

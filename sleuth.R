@@ -276,6 +276,51 @@ write.table(three_prime_bed, file = bed_path_three_prime, sep = "\t", quote = FA
 
 
 
+## Make a light version of the bed files that has strand in 6th column
+five_prime_light <- data.frame(matrix(ncol = 6, nrow = nrow(five_prime_bed)))
+five_prime_light$X1 <- five_prime_bed$Chr
+five_prime_light$X2 <- five_prime_bed$`start -50`
+five_prime_light$X3 <- five_prime_bed$`start +50`
+five_prime_light$X4 <- five_prime_bed$transcript_id
+five_prime_light$X5 <- rep.int(1, nrow(five_prime_bed))
+five_prime_light$X6 <- five_prime_bed$strand
+
+three_prime_light <- data.frame(matrix(ncol = 6, nrow = nrow(three_prime_bed)))
+three_prime_light$X1 <- three_prime_bed$Chr
+three_prime_light$X2 <- three_prime_bed$`end -50`
+three_prime_light$X3 <- three_prime_bed$`end +50`
+three_prime_light$X4 <- three_prime_bed$transcript_id
+three_prime_light$X5 <- rep.int(1, nrow(three_prime_bed))
+three_prime_light$X6 <- three_prime_bed$strand
+
+## save data to bed file
+bed_path_five_prime_light <- "C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/five_prime_light.bed"
+bed_path_three_prime_light <- "C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/three_prime_light.bed"
+
+# save bed files for upload later
+write.table(five_prime_light, file = bed_path_five_prime_light, sep = "\t", 
+            quote = FALSE, col.names = FALSE, row.names = FALSE)
+write.table(three_prime_light, file = bed_path_three_prime_light, sep = "\t", 
+            quote = FALSE, col.names = FALSE, row.names = FALSE)
+
+
+## make a new bed that follows convention for bed_novel
+bed_novel_light <- data.frame(matrix(ncol = 6, nrow = nrow(full_bed_novel)))
+bed_novel_light$X1 <- full_bed_novel$Chr
+bed_novel_light$X2 <- full_bed_novel$start
+bed_novel_light$X3 <- full_bed_novel$end
+bed_novel_light$X4 <- paste0('"', trimws(full_bed_novel$transcript_id, "l"),'"')
+bed_novel_light$X5 <- rep.int(1, nrow(full_bed_novel))
+bed_novel_light$X6 <- full_bed_novel$strand
+
+## save data to bed file
+bed_path_novel_light <- "C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/novel_light.bed"
+
+# save bed files for upload later
+write.table(bed_novel_light, file = bed_path_novel_light, sep = "\t", 
+            quote = FALSE, col.names = FALSE, row.names = FALSE)
+
+
 
 # Read kallisto output for parental lines
 #p1_l3 = read.table('C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/P1_L3/abundance.tsv', sep="\t", header=TRUE, as.is=1)

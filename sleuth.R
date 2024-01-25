@@ -255,14 +255,51 @@ sig_genes_table <- data.frame(gene_id = sleuth_gene_significant$target_id,
                                     log2FC = sleuth_gene_significant$b,
                                     qval = sleuth_gene_significant$qval)
 
+sig_genes_path <- "C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/sig_genes.tsv"
+sig_transcripts_path <- "C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/sig_transcripts.tsv"
+
+# save bed files for upload later
+write.table(sig_genes_table, file = sig_genes_path, sep = "\t", quote = FALSE,
+            col.names = TRUE, row.names = FALSE)
+write.table(sig_transcripts_table, file = sig_transcripts_path, sep = "\t", quote = FALSE,
+            col.names = TRUE, row.names = FALSE)
+
+
+
 #----
 
 
 # Plot the data
 plot_bootstrap(sleuth_object, "ENST00000371817.8", units = "est_counts", color_by = "condition")
 
+
 # Volcano plot with Enhanced Volcano
-#EnhancedVolcano()
+# Create a DF for enhanced volcano
+volcano_transcript_df <- data.frame(log2FC = sig_transcripts_table$log2FC,
+                                    q_vals = sig_transcripts_table$qval)
+row.names(volcano_transcript_df) <- sig_transcripts_table$target_id
+volcano_gene_df <- data.frame(log2FC = sig_genes_table$log2FC,
+                              q_vals = sig_genes_table$qval)
+row.names(volcano_gene_df) <- sig_genes_table$gene_id
+
+# Plot Volcano
+EnhancedVolcano(volcano_transcript_df,
+                lab = rownames(volcano_transcript_df),
+                x = 'log2FC',
+                y = 'q_vals',
+                title = 'Holoclonal vs Parental',
+                pointSize = 3.0,
+                labSize = 6.0
+                )
+EnhancedVolcano(volcano_gene_df,
+                lab = rownames(volcano_gene_df),
+                x = 'log2FC',
+                y = 'q_vals',
+                title = 'Holoclonal vs Parental',
+                pointSize = 3.0,
+                labSize = 6.0
+                )
+
 
 
 # Volcano plot with sleuth 

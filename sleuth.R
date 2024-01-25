@@ -107,7 +107,155 @@ sleuth_object <- sleuth_wt(sleuth_object, "conditionparental")
 # Code from pachterlab
 sleuth_table <- sleuth_results(sleuth_object, 'conditionparental', 'wt', show_all = FALSE)
 sleuth_significant <- dplyr::filter(sleuth_table, qval <= 0.05)
-head(sleuth_significant, 40)
+
+# Create a new dataframe for results
+sig_transcripts_table <- data.frame(target_id = sleuth_significant$target_id,
+                                    ens_gene = sleuth_significant$ens_gene,
+                                    ext_gene = sleuth_significant$ext_gene,
+                                    biotype = sleuth_significant$transcript_biotype,
+                                    log2FC = sleuth_significant$b,
+                                    qval = sleuth_significant$qval)
+
+
+
+
+
+
+
+
+### Do the same for gene level expression
+# Create df with transcript id and gene name
+no_exon_gtf <- filter(gtf_df, V3 == "transcript")
+# select columns: CHR, star, end, transcript id, strand
+mapping_precursor <- select(no_exon_gtf, "V1","V3","V4","V5","V7","V9")
+# Split last column with many attributes separated by ";"
+mapping_precursor_split <- separate_wider_delim(mapping_precursor, V9, ";", names = c("gene_id","transcript_id"), too_many = "merge")
+mapping_split_transcripts <- separate_wider_delim(mapping_precursor_split, transcript_id, ";", names = c("transcript_id", "rest"), too_many = "merge")
+mapping_split_transcripts <- separate_wider_delim(mapping_split_transcripts, rest, ";", names = c("gene_name", "ref_gene_id"), too_many = "merge", too_few = "align_end")
+
+# remove "gene_id" from gene_id column
+mapping_split_transcripts$gene_id <- gsub("gene_id ", "", mapping_split_transcripts$gene_id)
+# remove "transcript_id" from transcript_id column
+mapping_split_transcripts$transcript_id <- gsub("transcript_id ", "", mapping_split_transcripts$transcript_id)
+# remove "gene_name" from transcript_id column
+mapping_split_transcripts$gene_name <- gsub("gene_name ", "", mapping_split_transcripts$gene_name)
+
+
+# df should contain target id and gene id
+# novel_mapping <- data.frame("target_id" = trimws(mapping_split_transcripts$transcript_id, "l"),
+#                             "ens_gene" = mapping_split_transcripts$gene_id,
+#                             "ext_gene" = NA,
+#                             "gene_biotype" = "novel",
+#                             "transcript_biotype" = "novel")
+
+
+## create the data frame with the transcript to gene_name/gene_id mapping
+mapping_genes <- data.frame(matrix(ncol = 2, nrow = length(mapping_split_transcripts$gene_name)))
+
+# rename cols
+colnames(mapping_genes)[1] <- "target_id"
+colnames(mapping_genes)[2] <- "gene_id"
+
+
+# if there is no gene name --> transcript_id / gene_id
+# if there is gene name --> transcript_id / gene_name
+for (i in 1:length(mapping_split_transcripts$V1)){
+  if (is.na(mapping_split_transcripts$gene_name[i])){
+    mapping_genes$target_id[i] <- mapping_split_transcripts$transcript_id[i]
+    mapping_genes$gene_id[i] <- mapping_split_transcripts$gene_id[i]
+  }
+  else {
+    mapping_genes$target_id[i] <- mapping_split_transcripts$transcript_id[i]
+    mapping_genes$gene_id[i] <- mapping_split_transcripts$gene_name[i]  
+  }
+}
+
+# strip whitespace in front of target id and gene_id
+mapping_genes$target_id <- trimws(mapping_genes$target_id, "l")
+mapping_genes$gene_id <- trimws(mapping_genes$gene_id, "l")
+
+
+# Add biotype column
+mapping_genes$gene_biotype <- NA
+
+# add biotypes from transcript mapping for fields that start with ENSG
+for (i in 1:length(mapping_genes$gene_id)){
+  if (startsWith(mapping_genes$gene_id[i], "ENSG")){
+    # search index of gene in transcript mapping
+    target_index <- which(mapping$ens_gene == mapping_genes$gene_id[i])
+    mapping_genes$gene_biotype[i] <- mapping$gene_biotype[target_index[1]]
+  }
+  else {
+    next
+  }
+}
+
+# add biotypes from transcript mapping for fields where gene id is a real gene name
+for (i in 1:length(mapping_genes$gene_id)){
+  if (!startsWith(mapping_genes$gene_id[i], "ENSG") && !startsWith(mapping_genes$gene_id[i], "MSTR")){
+    # search index of gene in transcript mapping
+    target_index <- which(mapping$ext_gene == mapping_genes$gene_id[i])
+    mapping_genes$gene_biotype[i] <- mapping$gene_biotype[target_index[1]]
+  }
+  else {
+    next
+  }
+}
+
+
+
+# Merge the novel mapping with the mapping from before
+# gene_mapping <- mapping
+# gene_mapping <- rbind(mapping, novel_mapping)
+
+
+# Initialize Sleuth Object
+#--> changed transformation function to log2FC
+#--> aggregation column: is necessary if gene mode set to TRUE
+sleuth_object_gene <- sleuth_prep(ref_df, extra_bootstrap_summary = TRUE, 
+                             target_mapping = mapping_genes,
+                             aggregation_column = "gene_id",
+                             gene_mode = TRUE,
+                             transformation_function = function(x) log2(x + 0.5))
+
+
+# Fit full model
+sleuth_object_gene <- sleuth_fit(sleuth_object_gene, ~condition, 'full')
+
+#---- Error message
+# 3 NA values were found during variance shrinkage estimation due to mean observation values outside of the range used for the LOESS fit.
+# The LOESS fit will be repeated using exact computation of the fitted surface to extrapolate the missing values.
+# These are the target ids with NA values:  GNAT1,  RNF152,  ZDHHC22
+# computing variance of betas
+#---
+
+# Fit reduce model
+sleuth_object_gene <- sleuth_fit(sleuth_object_gene, ~1, 'reduced')
+#----
+# 4 NA values were found during variance shrinkage estimation due to mean observation values outside of the range used for the LOESS fit.
+# The LOESS fit will be repeated using exact computation of the fitted surface to extrapolate the missing values.
+# These are the target ids with NA values:  GNAT1,  RNF152,  ZDHHC22,  MT-CO1
+# computing variance of betas
+#----
+
+
+
+# Perform Sleuth test XXX --> we should do it with wt
+# sleuth_object <- sleuth_lrt(sleuth_object, 'reduced', 'full')
+sleuth_object_gene <- sleuth_wt(sleuth_object_gene, "conditionparental")
+
+# Read sleuth data into a table
+# Code from pachterlab
+sleuth_gene_table <- sleuth_results(sleuth_object_gene, 'conditionparental', 'wt', show_all = TRUE)
+sleuth_gene_significant <- dplyr::filter(sleuth_gene_table, qval <= 0.05)
+
+# Create a new dataframe for results
+sig_genes_table <- data.frame(gene_id = sleuth_gene_significant$target_id,
+                              gene_biotype = sleuth_gene_significant$gene_biotype,
+                                    log2FC = sleuth_gene_significant$b,
+                                    qval = sleuth_gene_significant$qval)
+
+#----
 
 
 # Plot the data
@@ -126,6 +274,14 @@ plot_volcano(sleuth_object, test = "conditionparental", test_type = "wt", which_
 
 
 
+
+
+
+
+
+
+
+#----
 ### Create New dataframe with necessary information for bedfile
 lnc_RNA_data <- dplyr::filter(sleuth_significant, gene_biotype == "lncRNA")
 novel_transcripts <- dplyr::filter(sleuth_significant, is.na(ens_gene))
@@ -208,7 +364,7 @@ write.table(full_bed_known, file = bed_path_known, sep = "\t", quote = FALSE,
 
 ### Create Bed files for the 5' end and 3' end
 # we want a window of +- 50bp
-# --> start for - stranded transcripts is end!
+# --> start for - stranded transcripts is end??
 
 five_prime_bed <- full_bed_novel 
 

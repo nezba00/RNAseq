@@ -23,8 +23,8 @@ do
 done
 
 
-# Generate fastqcs of all sequences
-for file in "$FASTQdir"/P*.gz;
+# Generate fastqcs of all sequences. Changed "1*" to "P*" for parental strains
+for file in "$FASTQdir"/1*.gz;
 do
     fastqc -o "/data/users/bnezar/RNA_Project/FastQC_Files" "$file"
 done

@@ -49,6 +49,10 @@ ref_df <- data.frame(sample = id,condition = c("parental", "parental", "parental
 ref_df$path <- kallisto_dirs
 
 
+# ref_df <- ref_df[nrow(ref_df):1,]
+# rownames(ref_df) <- NULL
+
+
 ### Get Biotypes and make target mapping
 # biomaRt::useMart() to connect to specified biomart database
 mart <- biomaRt::useMart(biomart = "ENSEMBL_MART_ENSEMBL", dataset = "hsapiens_gene_ensembl", host = "ensembl.org")
@@ -64,19 +68,23 @@ mapping <- biomaRt::getBM(attributes = c("ensembl_transcript_id", "ensembl_gene_
 # For target mapping in sleuth we need at least one column "target id"!
 mapping <- dplyr::rename(mapping, target_id = ensembl_transcript_id,
                      ens_gene = ensembl_gene_id, ext_gene = external_gene_name)
+
+
+
+
+
+
 ###building sleuth object
 ##so object contains info about experiment and details of the model for DE testing
 #loading kallisto data into the so object
-
-
-
 
 # Initialize Sleuth Object
 #--> changed transformation function to log2FC
 sleuth_object <- sleuth_prep(ref_df, extra_bootstrap_summary = TRUE, 
                              target_mapping = mapping,
+                             condition_name = "condition",
+                             condition_level = c("parental", "holoclonal"),
                              transformation_function = function(x) log2(x + 0.5))
-
 
 # Fit full model
 sleuth_object <- sleuth_fit(sleuth_object, ~condition, 'full')
@@ -88,7 +96,6 @@ sleuth_object <- sleuth_fit(sleuth_object, ~condition, 'full')
 #---
 
 
-
 # Fit reduce model
 sleuth_object <- sleuth_fit(sleuth_object, ~1, 'reduced')
 #----
@@ -96,7 +103,6 @@ sleuth_object <- sleuth_fit(sleuth_object, ~1, 'reduced')
 # The LOESS fit will be repeated using exact computation of the fitted surface to extrapolate the missing values.
 # These are the target ids with NA values: ENST00000643908.1
 #----
-
 
 
 # Perform Sleuth test XXX --> we should do it with wt
@@ -115,6 +121,15 @@ sig_transcripts_table <- data.frame(target_id = sleuth_significant$target_id,
                                     biotype = sleuth_significant$transcript_biotype,
                                     log2FC = sleuth_significant$b,
                                     qval = sleuth_significant$qval)
+
+
+
+
+
+
+
+
+
 
 
 
@@ -270,7 +285,10 @@ write.table(sig_transcripts_table, file = sig_transcripts_path, sep = "\t", quot
 
 
 # Plot the data
-plot_bootstrap(sleuth_object, "ENST00000371817.8", units = "est_counts", color_by = "condition")
+plot_bootstrap(sleuth_object, "MSTRG.9344.1", units = "est_counts", color_by = "condition")
+
+plot_bootstrap(sleuth_object, "MSTRG.2186.1", units = "est_counts", color_by = "condition")
+
 
 
 # Volcano plot with Enhanced Volcano

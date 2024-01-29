@@ -27,14 +27,20 @@ library(dplyr)
 
 library(tidyr)
 
+
+
+
+
+
+
 # set working directory
 setwd("C:/Users/nbaho/OneDrive/Desktop/Bioinf/R-studio")
 
 # Get name of all kallisto dirs
 id <- dir(file.path("..", "RNA_Seq_Project", "Kallisto_Data" ))
-
 # Create path to the results
 kallisto_dirs <- file.path("..", "RNA_Seq_Project", "Kallisto_Data", id, "abundance.h5")
+
 
 
 # Load merged GTF file
@@ -42,15 +48,26 @@ gtf_data <- read.table("C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/a
 gtf_df <- data.frame(gtf_data)
 
 
+
+
+
 # create metadata df
-ref_df <- data.frame(sample = id,condition = c("parental", "parental", "parental", "HoloClonal", "HoloClonal", "HoloClonal"))
+#ref_df <- data.frame(sample = id,condition = c("parental", "parental", "parental", "HoloClonal", "HoloClonal", "HoloClonal"))
+# append the path to the kallisto directories to complete metadata
+#ref_df$path <- kallisto_dirs
 
-# append the path to the kallisto directories
-ref_df$path <- kallisto_dirs
+
+## create metadata df --> other version compares parental vs holoclonal
+ref_df <- data.frame(sample = c("Holo_1_1", "Holo_1_2", "Holo_1_5", "P_1", "P_2", "P_3"),
+                  condition = c("Holoclonal", "Holoclonal", "Holoclonal", "control", "control", "control"),
+                  path = c("../RNA_Seq_Project/Kallisto_Data/S1_1_L3/abundance.h5",
+                           "../RNA_Seq_Project/Kallisto_Data/S1_2_L3/abundance.h5",
+                           "../RNA_Seq_Project/Kallisto_Data/S1_3_L3/abundance.h5",
+                           "../RNA_Seq_Project/Kallisto_Data/P1_L3/abundance.h5",
+                           "../RNA_Seq_Project/Kallisto_Data/P2_L3/abundance.h5",
+                           "../RNA_Seq_Project/Kallisto_Data/P3_L3/abundance.h5"))
 
 
-# ref_df <- ref_df[nrow(ref_df):1,]
-# rownames(ref_df) <- NULL
 
 
 ### Get Biotypes and make target mapping
@@ -74,7 +91,7 @@ mapping <- dplyr::rename(mapping, target_id = ensembl_transcript_id,
 
 
 
-###building sleuth object
+###building sleuth object --> transcripts
 ##so object contains info about experiment and details of the model for DE testing
 #loading kallisto data into the so object
 
@@ -82,8 +99,6 @@ mapping <- dplyr::rename(mapping, target_id = ensembl_transcript_id,
 #--> changed transformation function to log2FC
 sleuth_object <- sleuth_prep(ref_df, extra_bootstrap_summary = TRUE, 
                              target_mapping = mapping,
-                             condition_name = "condition",
-                             condition_level = c("parental", "holoclonal"),
                              transformation_function = function(x) log2(x + 0.5))
 
 # Fit full model
@@ -107,11 +122,11 @@ sleuth_object <- sleuth_fit(sleuth_object, ~1, 'reduced')
 
 # Perform Sleuth test XXX --> we should do it with wt
 # sleuth_object <- sleuth_lrt(sleuth_object, 'reduced', 'full')
-sleuth_object <- sleuth_wt(sleuth_object, "conditionparental")
+sleuth_object <- sleuth_wt(sleuth_object, "conditionHoloclonal")
 
 # Read sleuth data into a table
 # Code from pachterlab
-sleuth_table <- sleuth_results(sleuth_object, 'conditionparental', 'wt', show_all = FALSE)
+sleuth_table <- sleuth_results(sleuth_object, 'conditionHoloclonal', 'wt', show_all = FALSE)
 sleuth_significant <- dplyr::filter(sleuth_table, qval <= 0.05)
 
 # Create a new dataframe for results
@@ -123,6 +138,8 @@ sig_transcripts_table <- data.frame(target_id = sleuth_significant$target_id,
                                     qval = sleuth_significant$qval)
 
 
+## Create a table with only significant lncRNAs
+sig_lncRNAs <- filter(sleuth_significant, transcript_biotype == "lncRNA")
 
 
 
@@ -135,13 +152,13 @@ sig_transcripts_table <- data.frame(target_id = sleuth_significant$target_id,
 
 
 
+#### Do the same for gene level expression
 
 
-
-### Do the same for gene level expression
-# Create df with transcript id and gene name
+### First create new mapping
+## Create df with transcript id and gene name from gtf
 no_exon_gtf <- filter(gtf_df, V3 == "transcript")
-# select columns: CHR, star, end, transcript id, strand
+# select columns: CHR, start, end, transcript id, strand
 mapping_precursor <- select(no_exon_gtf, "V1","V3","V4","V5","V7","V9")
 # Split last column with many attributes separated by ";"
 mapping_precursor_split <- separate_wider_delim(mapping_precursor, V9, ";", names = c("gene_id","transcript_id"), too_many = "merge")
@@ -156,24 +173,18 @@ mapping_split_transcripts$transcript_id <- gsub("transcript_id ", "", mapping_sp
 mapping_split_transcripts$gene_name <- gsub("gene_name ", "", mapping_split_transcripts$gene_name)
 
 
-# df should contain target id and gene id
-# novel_mapping <- data.frame("target_id" = trimws(mapping_split_transcripts$transcript_id, "l"),
-#                             "ens_gene" = mapping_split_transcripts$gene_id,
-#                             "ext_gene" = NA,
-#                             "gene_biotype" = "novel",
-#                             "transcript_biotype" = "novel")
 
 
-## create the data frame with the transcript to gene_name/gene_id mapping
+## create mapping with transcript to gene_name/gene_id andbiotype
 mapping_genes <- data.frame(matrix(ncol = 2, nrow = length(mapping_split_transcripts$gene_name)))
 
 # rename cols
 colnames(mapping_genes)[1] <- "target_id"
 colnames(mapping_genes)[2] <- "gene_id"
 
-
-# if there is no gene name --> transcript_id / gene_id
-# if there is gene name --> transcript_id / gene_name
+# Add gene ids/ gene names
+# if there is no gene name --> transcript_id | gene_id
+# if there is gene name --> transcript_id | gene_name
 for (i in 1:length(mapping_split_transcripts$V1)){
   if (is.na(mapping_split_transcripts$gene_name[i])){
     mapping_genes$target_id[i] <- mapping_split_transcripts$transcript_id[i]
@@ -190,7 +201,7 @@ mapping_genes$target_id <- trimws(mapping_genes$target_id, "l")
 mapping_genes$gene_id <- trimws(mapping_genes$gene_id, "l")
 
 
-# Add biotype column
+## Add biotype column
 mapping_genes$gene_biotype <- NA
 
 # add biotypes from transcript mapping for fields that start with ENSG
@@ -219,12 +230,8 @@ for (i in 1:length(mapping_genes$gene_id)){
 
 
 
-# Merge the novel mapping with the mapping from before
-# gene_mapping <- mapping
-# gene_mapping <- rbind(mapping, novel_mapping)
-
-
-# Initialize Sleuth Object
+## Sleuth gene analysis
+## Initialize Sleuth Object
 #--> changed transformation function to log2FC
 #--> aggregation column: is necessary if gene mode set to TRUE
 sleuth_object_gene <- sleuth_prep(ref_df, extra_bootstrap_summary = TRUE, 
@@ -257,11 +264,11 @@ sleuth_object_gene <- sleuth_fit(sleuth_object_gene, ~1, 'reduced')
 
 # Perform Sleuth test XXX --> we should do it with wt
 # sleuth_object <- sleuth_lrt(sleuth_object, 'reduced', 'full')
-sleuth_object_gene <- sleuth_wt(sleuth_object_gene, "conditionparental")
+sleuth_object_gene <- sleuth_wt(sleuth_object_gene, "conditionHoloclonal")
 
 # Read sleuth data into a table
 # Code from pachterlab
-sleuth_gene_table <- sleuth_results(sleuth_object_gene, 'conditionparental', 'wt', show_all = TRUE)
+sleuth_gene_table <- sleuth_results(sleuth_object_gene, 'conditionHoloclonal', 'wt', show_all = TRUE)
 sleuth_gene_significant <- dplyr::filter(sleuth_gene_table, qval <= 0.05)
 
 # Create a new dataframe for results
@@ -273,7 +280,7 @@ sig_genes_table <- data.frame(gene_id = sleuth_gene_significant$target_id,
 sig_genes_path <- "C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/sig_genes.tsv"
 sig_transcripts_path <- "C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/sig_transcripts.tsv"
 
-# save bed files for upload later
+# save files for upload later
 write.table(sig_genes_table, file = sig_genes_path, sep = "\t", quote = FALSE,
             col.names = TRUE, row.names = FALSE)
 write.table(sig_transcripts_table, file = sig_transcripts_path, sep = "\t", quote = FALSE,
@@ -284,7 +291,7 @@ write.table(sig_transcripts_table, file = sig_transcripts_path, sep = "\t", quot
 #----
 
 
-# Plot the data
+### Plot the data
 plot_bootstrap(sleuth_object, "MSTRG.9344.1", units = "est_counts", color_by = "condition")
 
 plot_bootstrap(sleuth_object, "MSTRG.2186.1", units = "est_counts", color_by = "condition")
@@ -321,7 +328,7 @@ EnhancedVolcano(volcano_gene_df,
 
 
 # Volcano plot with sleuth 
-plot_volcano(sleuth_object, test = "conditionparental", test_type = "wt", which_model = "full",
+plot_volcano(sleuth_object, test = "conditionHoloclonal", test_type = "wt", which_model = "full",
              sig_level = 0.1, point_alpha = 0.2, sig_color = "red",
              highlight = NULL)
 
@@ -342,8 +349,8 @@ lnc_RNA_data <- dplyr::filter(sleuth_significant, gene_biotype == "lncRNA")
 novel_transcripts <- dplyr::filter(sleuth_significant, is.na(ens_gene))
 
 
-dif_exp_results <- sleuth_significant$ 
-dplyr::filter(gtf_df,  )
+#dif_exp_results <- sleuth_significant$ 
+#dplyr::filter(gtf_df,  )
 
 
 # Make 2 bed files
@@ -387,7 +394,7 @@ minus_pre_bed <- minus_pre_bed_inversed[,c(1,4,3,7,5,6,8,9,2)]
 plus_pre_bed <- plus_pre_bed[,c(1,3,4,7,5,6,8,9,2)]
 
 
-# Create a dataframe with only novel/known transcripts for + and - stranded transcripts
+### Create a dataframe with only novel/known transcripts for + and - stranded transcripts
 plus_pre_bed_novel <- plus_pre_bed[is.na(plus_pre_bed$gene_name),]
 plus_pre_bed_known <- plus_pre_bed[!is.na(plus_pre_bed$gene_name),]
 
@@ -417,6 +424,8 @@ write.table(full_bed_known, file = bed_path_known, sep = "\t", quote = FALSE,
             col.names = FALSE, row.names = FALSE)
 
 
+
+
 ### Create Bed files for the 5' end and 3' end
 # we want a window of +- 50bp
 # --> start for - stranded transcripts is end??
@@ -427,7 +436,7 @@ five_prime_bed <- full_bed_novel
 colnames(five_prime_bed)[colnames(five_prime_bed) == "start"] <- "start -50"
 colnames(five_prime_bed)[colnames(five_prime_bed) == "end"] <- "start +50"
 
-# replace start and end values with start +- 50
+# replace start and end values with start +- 50 --> comparison window
 for (index in  1:nrow(five_prime_bed)){
   if (five_prime_bed[index, 5] == "+"){
     start <- five_prime_bed[index, 2]
@@ -491,6 +500,9 @@ write.table(three_prime_bed, file = bed_path_three_prime, sep = "\t", quote = FA
 
 
 ## Make a light version of the bed files that has strand in 6th column
+# --> this is necessary because I did not know about standard bed format
+
+# for 5'
 five_prime_light <- data.frame(matrix(ncol = 6, nrow = nrow(five_prime_bed)))
 five_prime_light$X1 <- five_prime_bed$Chr
 five_prime_light$X2 <- five_prime_bed$`start -50`
@@ -499,6 +511,7 @@ five_prime_light$X4 <- five_prime_bed$transcript_id
 five_prime_light$X5 <- rep.int(1, nrow(five_prime_bed))
 five_prime_light$X6 <- five_prime_bed$strand
 
+# for 3'
 three_prime_light <- data.frame(matrix(ncol = 6, nrow = nrow(three_prime_bed)))
 three_prime_light$X1 <- three_prime_bed$Chr
 three_prime_light$X2 <- three_prime_bed$`end -50`
@@ -518,7 +531,7 @@ write.table(three_prime_light, file = bed_path_three_prime_light, sep = "\t",
             quote = FALSE, col.names = FALSE, row.names = FALSE)
 
 
-## make a new bed that follows convention for bed_novel
+# for bed_novel
 bed_novel_light <- data.frame(matrix(ncol = 6, nrow = nrow(full_bed_novel)))
 bed_novel_light$X1 <- full_bed_novel$Chr
 bed_novel_light$X2 <- full_bed_novel$start
@@ -530,25 +543,10 @@ bed_novel_light$X6 <- full_bed_novel$strand
 ## save data to bed file
 bed_path_novel_light <- "C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/novel_light.bed"
 
-# save bed files for upload later
+# save bed file for upload later
 write.table(bed_novel_light, file = bed_path_novel_light, sep = "\t", 
             quote = FALSE, col.names = FALSE, row.names = FALSE)
 
 
 
-# Read kallisto output for parental lines
-#p1_l3 = read.table('C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/P1_L3/abundance.tsv', sep="\t", header=TRUE, as.is=1)
-#p2_l3 = read.table('C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/P2_L3/abundance.tsv', sep="\t", header=TRUE, as.is=1)
-#p3_l3 = read.table('C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/P3_L3/abundance.tsv', sep="\t", header=TRUE, as.is=1)
 
-# Read kallisto output for holo lines
-#s1_l3 = read.table('C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/S1_1_L3/abundance.tsv', sep="\t", header=TRUE, as.is=1)
-#s2_l3 = read.table('C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/S1_2_L3/abundance.tsv', sep="\t", header=TRUE, as.is=1)
-#s3_l3 = read.table('C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/S1_3_L3/abundance.tsv', sep="\t", header=TRUE, as.is=1)
-
-
-# t2g target mappimg
-
-
-loaded_packages <- installed.packages()[, "Package"]
-print(loaded_packages)

@@ -29,3 +29,4 @@ do
     fastqc -o "/data/users/bnezar/RNA_Project/FastQC_Files" "$file"
 done
 
+# Number of reads can also be seen in fastQCs

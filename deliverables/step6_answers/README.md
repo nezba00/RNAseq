@@ -11,6 +11,6 @@ Contain number of:
 --> number of non protein coding transcripts
 
 
---> Tables with transcripts and information about TSS, PolyA, intergenic, and protein coding bool
+Tables with transcripts and information about TSS, PolyA, intergenic, and protein coding bool
 
-Columns for TSS, PolyA, intergenic, and protein coding bool are only relevant for novel transcripts!
+--> Columns for TSS, PolyA, intergenic, and protein coding bool are only relevant for novel transcripts!

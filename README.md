@@ -1,5 +1,6 @@
 # RNAseq
 The scripts were used in the following order:
+
 --> 01: RNAseq_Holo.sh
 
 --> 02: module load UHTS/Quality_control/fastqc/0.11.9

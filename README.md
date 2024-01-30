@@ -25,4 +25,12 @@ The scripts were used in the following order:
 
 --> 12: sleuth.R
 
---> 13: answers_step_6.R
+--> 13: intersect.sh
+
+--> 14: three_prime_intersect.sh
+
+--> 15: five_prime_intersect.sh
+
+--> 16: cpat.sh
+
+--> 17: answers_step_6.R

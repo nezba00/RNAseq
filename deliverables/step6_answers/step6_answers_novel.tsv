@@ -1,0 +1,7 @@
+Category	Number	Ratio.of.Novel
+Correct TSS	7874	0.605692307692308
+Correct Poly-A	6569	0.505307692307692
+Correct TSS & Poly-A	4349	0.334538461538462
+Intergenic Transcripts	290	0.0223076923076923
+Protein Coding Transcripts	5677	0.436692307692308
+Total Novel Transcripts	13000	1

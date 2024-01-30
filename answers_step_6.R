@@ -20,6 +20,9 @@ novel_light_bed <- read.table("C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Pr
                         sep = "\t")
 transcript_data <- read.table("C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/sig_transcripts.tsv", 
                               sep = "\t", header = T)
+# Also load sig gene data to make plots
+gene_data <- read.table("C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/sig_genes.tsv", 
+                              sep = "\t", header = T)
 
 
 # Filter cpat output for transcripts with coding prob lower than 0.364 --> recommended on cpat doc page
@@ -188,6 +191,22 @@ row.names(sig_result_table) <- c("Correct TSS", "Correct Poly-A", "Correct TSS &
 
 
 
+## Save both result tables for novel and novel significant transcripts
+## Save complete transcript and gene expression table
+result_path_novel <- "C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/step6_answers_novel.tsv"
+result_path_sig_novel <- "C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/step6_answers_sig_novel.tsv"
+
+# save files for upload later
+write.table(sig_result_table, file = result_path_sig_novel , sep = "\t", quote = FALSE,
+            col.names = TRUE, row.names = FALSE)
+write.table(result_table, file = result_path_novel, sep = "\t", quote = FALSE,
+            col.names = TRUE, row.names = FALSE)
+
+
+
+
+
+
 
 
 
@@ -222,7 +241,6 @@ lnc_table <- novel_light_bed
 # Create column for orf length
 lnc_table$ORF_length <- lnc_table$V3 - lnc_table$V2
 
-
 lnc_table <- filter(lnc_table, ORF_length > 200, protein_potential < 0.364)
 
 
@@ -238,7 +256,93 @@ for (i in 1:length(lnc_table_sig$biotype)){
 lnc_table_sig <- filter(lnc_table_sig, biotype == "lncRNA")
 # Filter for novel
 lnc_table_sig_novel <- filter(lnc_table_sig, is.na(ens_gene))
+# Filter for intergenic
+lnc_table_intergenic <- filter(lnc_table_sig_novel, intergenic == T)
 
+
+
+sorted_results_path <- "C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/step6_sorted_novel.tsv"
+sig_lnc_path <- "C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/step6_sig_lnc.tsv"
+sig_novel_lnc_path <- "C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/step6_sig_novel_lnc.tsv"
+
+
+# save files for upload later
+write.table(sorted_results, file = sorted_results_path , sep = "\t", quote = FALSE,
+            col.names = TRUE, row.names = FALSE)
+write.table(lnc_table_sig, file = sig_lnc_path, sep = "\t", quote = FALSE,
+            col.names = TRUE, row.names = FALSE)
+write.table(lnc_table_sig_novel, file = sig_novel_lnc_path, sep = "\t", quote = FALSE,
+            col.names = TRUE, row.names = FALSE)
+
+
+
+
+
+### Create a volcano plot for lncRNAs
+# Volcano plot with Enhanced Volcano
+# Create a DF for enhanced volcano
+volcano_lnc_df <- data.frame(log2FC = lnc_table_sig$log2FC,
+                                    q_vals = lnc_table_sig$qval)
+row.names(volcano_lnc_df) <- lnc_table_sig$target_id
+
+volcano_transcript_df <- data.frame(log2FC = transcript_data$log2FC,
+                                    q_vals = transcript_data$qval)
+row.names(volcano_transcript_df) <- transcript_data$target_id
+
+volcano_gene_df <- data.frame(log2FC = gene_data$log2FC,
+                              q_vals = gene_data$qval)
+row.names(volcano_gene_df) <- gene_data$gene_id
+
+# Plot Volcano
+transcript_volcano <-EnhancedVolcano(volcano_transcript_df,
+                                     lab = rownames(volcano_transcript_df),
+                                     x = 'log2FC',
+                                     y = 'q_vals',
+                                     ylim = c(0, -log10(10e-200)),
+                                     xlim = c(-8, 8),
+                                     xlab = "",
+                                     title = 'Transcript Level',
+                                     pointSize = 3.0,
+                                     labSize = 5.0,
+)
+gene_volcano <- EnhancedVolcano(volcano_gene_df,
+                                lab = rownames(volcano_gene_df),
+                                x = 'log2FC',
+                                y = 'q_vals',
+                                ylim = c(0, -log10(10e-200)),
+                                xlim = c(-8, 8),
+                                ylab = "",
+                                title = 'Gene Level',
+                                pointSize = 3.0,
+                                labSize = 5.0
+)
+
+
+lnc_volcano <- EnhancedVolcano(volcano_lnc_df,
+                              lab = rownames(volcano_lnc_df),
+                              x = 'log2FC',
+                              y = 'q_vals',
+                              ylim = c(0, -log10(10e-200)),
+                              xlim = c(-8, 8),
+                              xlab = "",
+                              ylab = "",
+                              title = 'lncRNA level',
+                              pointSize = 3.0,
+                              labSize = 5.0
+)
+
+
+
+
+plot(transcript_volcano)
+
+library(ggpubr)
+
+
+### Plot the 4 Plots for Fig. 1
+ggarrange(transcript_volcano, gene_volcano, lnc_volcano,
+          ncol=3, nrow=1, 
+          common.legend = TRUE, legend="bottom")
 
 ## Save all important files --> finish this tomorrow!
 # sig_genes_path <- "C:/Users/nbaho/OneDrive/Desktop/Bioinf/RNA_Seq_Project/sig_genes.tsv"

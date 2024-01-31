@@ -1,2 +1,4 @@
 # Expression table for each replicate under --> abundance.tsv in the directories
 #--> /data/users/bnezar/RNA_Project/kallisto/sleuth_in
+
+# Expression for gene level and a summary table for transcript in ./quantification tables/

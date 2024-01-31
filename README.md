@@ -39,3 +39,5 @@ The scripts were used in the following order:
 --> 16: cpat.sh
 
 --> 17: answers_step_6.R
+
+--> 18: quantification_tables.R

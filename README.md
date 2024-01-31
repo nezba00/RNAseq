@@ -1,4 +1,9 @@
 # RNAseq
+This is the Folder for the lncRNAseq Project.
+Group 1: Holoclonal
+
+Code in this folder was used for alignment, assembly, quantification differential expression analysis of paired end RNAseq data and different QC steps necessary.
+
 The scripts were used in the following order:
 
 --> 01: RNAseq_Holo.sh
